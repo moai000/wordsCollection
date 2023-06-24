@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="./css/bootstrap.min_v4.2.css" crossorigin="anonymous">
+    <script src="./vue/vue_v2.7.js"></script>
+    <script src="./vue/vue-router_v3.0.js"></script>
+    <script src="./vue/axios.min.js"></script>
+    <script src="./js/main.js"></script>
+</head>
+<body>
+    <div id="app">
+        <h3 class="text-secondary px-5 py-2">words collection...</h3>
+        <nav class="navbar navbar-expand-lg navbar-light bg-light">
+            <div class="container-fluid">
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav">
+                        <li class="nav-item">
+                            <a class="nav-link"><router-link to="/">Home</router-link></a>
+                        </li>
+                    </ul>
+                    <button type="button" class="btn btn-primary"><router-link class="text-light" to="/create">Create</router-link></button>
+                </div>
+            </div>
+        </nav>
+        <router-view></router-view>
+    </div>
+
+    <script type="text/x-template" id="wordList">
+        <table class="table">
+            <thead>
+                <tr>
+                    <td>No.</td>
+                    <td>Word</td>
+                </tr>
+            </thead>
+            <tbody>
+                <tr v-for="(data, index) in list" v-bind:key="data">
+                    <td>{{index+1}}</td>
+                    <td>
+                        <figure class="text-end">
+                            <blockquote class="blockquote">
+                                <p>{{data.word}}</p>
+                            </blockquote>
+                            <figcaption class="blockquote-footer">
+                                {{data.person}}
+                                <span class="px-2" v-show="data.source !== ''">/</span>
+                                <cite title="Source Title">{{data.source}}</cite>
+                            </figcaption>
+                        </figure>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+        <p class="lead" v-if="loading">Loading...</p>
+    </script>
+
+    <script type="text/x-template" id="createWord">
+        <div class="mx-5 mt-4">
+            <div class="mb-3">
+                <label for="word" class="form-label">Word</label>
+                <textarea class="form-control" id="word" rows="3" v-model="word"></textarea>
+            </div>
+            <div class="mb-3">
+                <label for="person" class="form-label">Person</label>
+                <input type="text" class="form-control" id="person" placeholder="" v-model="person">
+            </div>
+            <div class="mb-3">
+                <label for="whois" class="form-label">Who?</label>
+                <input type="text" class="form-control" id="whois" placeholder="" v-model="whois">
+            </div>
+            <div class="mb-3">
+                <label for="source" class="form-label">Source</label>
+                <input type="text" class="form-control" id="source" placeholder="" v-model="source">
+            </div>
+            <p><button type="button" class="btn btn-primary mt-4" @click="createWord">Send</button></p>
+        </div>
+    </script>
+
+
+    <script>
+        var WordList = {
+            template: '#wordList',
+            data: function () {
+                return {
+                    list: this.getWordList(),
+                    loading: false
+                }
+            },
+            methods: {
+                getWordList: function () {
+                    loading = true
+                    axios.get('https://k1kihlm6q3.execute-api.ap-northeast-1.amazonaws.com/getList')
+                        .then(function (res) {
+                            loading = false
+                            if (res.data) {
+                                if (res.data.error) {
+                                    console.log(res.data.error)
+                                } else {
+                                    this.list = res.data
+                                }
+                            }
+                        }.bind(this))
+                        .catch(function (error) {
+                            console.log(error)
+                        }.bind(this))
+                        .finally(function () {
+
+                        }.bind(this))
+
+                },
+                htmlText(msg) {
+                    if (!!(msg)) {
+                        return msg.replace(/\r?\n/g, '<br>')
+                    }
+                }
+            }
+        }
+
+        var createWord = {
+            template: '#createWord',
+            data: function () {
+                return {
+                    word: '',
+                    person: '',
+                    whois: '',
+                    source: ''
+                }
+            },
+            methods: {
+                createWord: function () {
+                    axios
+                        .post('https://k1kihlm6q3.execute-api.ap-northeast-1.amazonaws.com/createWord',
+                        {
+                            word: this.word,
+                            person: this.person,
+                            whois: this.whois,
+                            source: this.source
+                        })
+                        .then((res) => {
+                            console.log(res)
+                            this.$router.push('/list')
+                        })
+                        .catch(function (error) {
+                            console.log(error)
+                        })
+                        .finally(function () {
+
+                        });
+                }
+            }
+        }
+
+        var router = new VueRouter({
+            routes: [
+
+                {
+                    path: '/list',
+                    component: WordList
+                },
+                {
+                    path: '/create',
+                    component: createWord
+                },
+                {
+                    path: '*',
+                    redirect: '/list'
+                }
+            ]
+        })
+
+        var app = new Vue({
+            data: {},
+            router: router
+        }).$mount('#app')
+
+
+    </script>
+</body>
+</html>
